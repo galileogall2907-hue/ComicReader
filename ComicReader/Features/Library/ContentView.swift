@@ -3,29 +3,30 @@ import SwiftUI
 struct ContentView: View {
     @Environment(LibraryStore.self) private var store
     @State private var searchText = ""
+    @State private var showSortOptions = false
 
-        private var filteredItems: [LibraryItem] {
+    private var filteredItems: [LibraryItem] {
         // 1. Primero filtramos por el texto de búsqueda
         let items = store.items(matching: searchText)
-        
+
         // 2. Ordenamos usando una estructura explícita que Xcode entiende perfectamente
         let sortedItems = items.sorted { (first: LibraryItem, second: LibraryItem) -> Bool in
             switch sortOption {
-            case .title:
-                return isAscending ? first.title < second.title : first.title > second.title
-            case .progress:
-                return isAscending ? first.progress < second.progress : first.progress > second.progress
-            case .date:
-                // Si LibraryItem no tiene fecha, usamos un valor por defecto o fallback
-                let firstDate = first.createdAt
-                let secondDate = second.createdAt
-                return isAscending ? firstDate < secondDate : firstDate > secondDate
+                case .title:
+                    return isAscending ? first.title < second.title : first.title > second.title
+                case .progress:
+                    return isAscending
+                        ? first.progress < second.progress : first.progress > second.progress
+                case .date:
+                    // Si LibraryItem no tiene fecha, usamos un valor por defecto o fallback
+                    let firstDate = first.createdAt
+                    let secondDate = second.createdAt
+                    return isAscending ? firstDate < secondDate : firstDate > secondDate
             }
         }
-        
+
         return sortedItems
     }
-
 
     private var columns: [GridItem] {
         [GridItem(.adaptive(minimum: 140, maximum: 220), spacing: 16, alignment: .top)]
@@ -41,14 +42,14 @@ struct ContentView: View {
         case title = "Nombre"
         case progress = "Avance de lectura"
         case date = "Fecha de carga"
-        
+
         var id: String { self.rawValue }
-        
+
         var icon: String {
             switch self {
-            case .title: return "textformat"
-            case .progress: return "chart.bar.fill"
-            case .date: return "calendar"
+                case .title: return "textformat"
+                case .progress: return "chart.bar.fill"
+                case .date: return "calendar"
             }
         }
     }
@@ -65,7 +66,7 @@ struct ContentView: View {
             .background(Color(.systemGroupedBackground))
             .navigationTitle("Biblioteca")
             .searchable(text: $searchText, prompt: "Título, autor o formato")
-                        .toolbar {
+            .toolbar {
                 // NUEVO: Botón de Ordenamiento
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
@@ -84,12 +85,13 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        
+
                         // Sección de Dirección (Ascendente / Descendente)
                         Section {
                             Toggle(isOn: $isAscending) {
-                                Label(isAscending ? "Ascendente" : "Descendente", 
-                                      systemImage: isAscending ? "arrow.up" : "arrow.down")
+                                Label(
+                                    isAscending ? "Ascendente" : "Descendente",
+                                    systemImage: isAscending ? "arrow.up" : "arrow.down")
                             }
                         }
                     } label: {
