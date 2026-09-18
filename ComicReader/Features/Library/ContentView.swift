@@ -89,12 +89,12 @@ struct ContentView: View {
                         Section {
                             Toggle(isOn: $isAscending) {
                                 Label(isAscending ? "Ascendente" : "Descendente", 
-                                      systemName: isAscending ? "arrow.up" : "arrow.down")
+                                      systemImage: isAscending ? "arrow.up" : "arrow.down")
                             }
                         }
                     } label: {
                         // Icono dinámico que cambia según el orden seleccionado
-                        Label("Ordenar", systemName: "line.3.horizontal.decrease.circle")
+                        Label("Ordenar", systemImage: "line.3.horizontal.decrease.circle")
                     }
                 }
 
