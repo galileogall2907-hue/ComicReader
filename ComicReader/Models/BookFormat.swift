@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 enum BookFormat: String, CaseIterable, Identifiable, Codable, Hashable {
     case cbz
@@ -29,5 +30,10 @@ enum BookFormat: String, CaseIterable, Identifiable, Codable, Hashable {
         case .pdf: Color(red: 0.72, green: 0.18, blue: 0.22)
         case .epub: Color(red: 0.20, green: 0.55, blue: 0.42)
         }
+    }
+
+    static func from(url: URL) -> BookFormat? {
+        let ext = url.pathExtension.lowercased()
+        return BookFormat.allCases.first { $0.fileExtension == ext }
     }
 }

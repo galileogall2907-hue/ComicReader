@@ -1,18 +1,23 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @Environment(LibraryStore.self) private var store
+    @Environment(ImportService.self) private var importService
     @State private var searchText = ""
     @State private var showSortOptions = false
 
     @State private var sortOption: SortOption = .title
     @State private var isAscending: Bool = true
 
-    // Estados para selección múltiple
     @State private var selectionMode = false
     @State private var selectedItems: Set<UUID> = []
     @State private var showRenameAlert = false
     @State private var newTitle = ""
+    
+    @State private var showDocumentPicker = false
+    @State private var importResult: ImportResult?
+    @State private var showImportResult = false
 
     private var filteredItems: [LibraryItem] {
         let items = store.items(matching: searchText)
@@ -60,7 +65,6 @@ struct ContentView: View {
             .navigationTitle("Biblioteca")
             .searchable(text: $searchText, prompt: "Título, autor o formato")
             .toolbar {
-                // Botón de Selección
                 ToolbarItem(placement: .primaryAction) {
                     Button(selectionMode ? "Cancelar" : "Seleccionar") {
                         selectionMode.toggle()
@@ -68,7 +72,6 @@ struct ContentView: View {
                     }
                 }
 
-                // Botón de Ordenamiento
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Section("Ordenar por") {
@@ -92,17 +95,15 @@ struct ContentView: View {
                     }
                 }
 
-                // Botón "+"
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        // Importación...
+                        showDocumentPicker = true
                     } label: {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel("Añadir libro")
                 }
             }
-            // Menú de acciones
             .toolbar {
                 ToolbarItemGroup(placement: .bottomBar) {
                     if selectionMode && !selectedItems.isEmpty {
@@ -149,6 +150,28 @@ struct ContentView: View {
                     selectedItems.removeAll()
                 }
             }
+            .fileImporter(
+                isPresented: $showDocumentPicker,
+                allowedContentTypes: importService.supportedUTTypes,
+                allowsMultipleSelection: true
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    Task {
+                        let result = await importService.importFiles(from: urls)
+                        importResult = result
+                        showImportResult = result.hasChanges || !result.failed.isEmpty
+                    }
+                case .failure(let error):
+                    importResult = ImportResult(imported: [], skipped: [], failed: [(URL(string: "")!, error)])
+                    showImportResult = true
+                }
+            }
+            .alert("Importación", isPresented: $showImportResult, presenting: importResult) { _ in
+                Button("OK") {}
+            } message: { result in
+                Text(result.summary)
+            }
         }
     }
 
@@ -180,7 +203,6 @@ struct ContentView: View {
                             .buttonStyle(.plain)
                         }
 
-                        // 🔹 Badge "Nuevo" con icono en esquina inferior derecha
                         if item.progress == 0.0 {
                             VStack {
                                 Spacer()
@@ -214,9 +236,11 @@ struct ContentView: View {
 #Preview("Biblioteca") {
     ContentView()
         .environment(LibraryStore())
+        .environment(ImportService(store: LibraryStore()))
 }
 
 #Preview("Vacía") {
     ContentView()
         .environment(LibraryStore(items: [], usesSampleData: false))
+        .environment(ImportService(store: LibraryStore(items: [], usesSampleData: false)))
 }
